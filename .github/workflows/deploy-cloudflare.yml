@@ -1,0 +1,51 @@
+name: Publish website to Cloudflare
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+  deployments: write
+concurrency:
+  group: cloudflare-production
+  cancel-in-progress: false
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - name: Check publishing credentials
+        env:
+          CF_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CF_ACCOUNT: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          if [ -z "$CF_TOKEN" ] || [ -z "$CF_ACCOUNT" ]; then
+            echo "::error::Add CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID in repository Settings > Secrets and variables > Actions."
+            exit 1
+          fi
+      - name: Prepare and check website files
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import shutil
+          root = Path(".")
+          out = Path("_publish")
+          out.mkdir()
+          for name in ("index.html", "recommended-gear.html", "about.html", "privacy.html", "disclosure.html"):
+              assert (root / name).is_file(), f"Missing page: {name}"
+          for name in ("bands", "small-space", "beginner", "budget", "kettlebell", "storage", "roller", "online"):
+              assert (root / "assets/guides" / (name + ".jpg")).is_file(), f"Missing image: {name}"
+          for item in root.iterdir():
+              if item.is_file() and item.suffix.lower() in (".html", ".css", ".js", ".png", ".jpg", ".jpeg", ".webp", ".svg", ".ico", ".txt", ".xml"):
+                  shutil.copy2(item, out / item.name)
+          for name in ("assets", "guides"):
+              shutil.copytree(root / name, out / name)
+          print("Website pages and eight corrected guide images are ready.")
+          PY
+      - name: Publish to existing Cloudflare Pages project
+        uses: cloudflare/wrangler-action@v4
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: pages deploy _publish --project-name=home-fitness-finds-hq --branch=main
+          gitHubToken: ${{ secrets.GITHUB_TOKEN }}
