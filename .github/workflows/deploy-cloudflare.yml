@@ -38,7 +38,7 @@ jobs:
           for item in root.iterdir():
               if item.is_file() and item.suffix.lower() in (".html", ".css", ".js", ".png", ".jpg", ".jpeg", ".webp", ".svg", ".ico", ".txt", ".xml"):
                   shutil.copy2(item, out / item.name)
-          for name in ("assets", "guides"):
+          for name in ("assets", "guides", "functions"):
               shutil.copytree(root / name, out / name)
           print("Website pages and eight corrected guide images are ready.")
           PY
