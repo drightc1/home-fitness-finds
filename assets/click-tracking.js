@@ -3,7 +3,9 @@
   'use strict';
   if (window.ffhqAnalyticsLoaded) return;
   window.ffhqAnalyticsLoaded = true;
-  var id = 'G-XPS7L21C89', key = 'ffhq-analytics-consent', enabled = false;
+  // GA4 intentionally disabled until a dedicated Fitness Finds HQ web stream ID is verified.
+  // Set id to that stream's G-XXXXXXXXXX ID only; never reuse a different business's stream.
+  var id = '', key = 'ffhq-analytics-consent', enabled = false;
   function choice() { try { return localStorage.getItem(key); } catch (_) { return null; } }
   function save(value) { try { localStorage.setItem(key, value); } catch (_) {} }
   function start() {
@@ -68,6 +70,7 @@
     document.body.appendChild(box);
   }
   function init() {
+    if (!id) return; // No misleading analytics consent prompt until a valid stream is configured.
     if (choice() === 'yes') start();
     else if (choice() !== 'no') showPreferences();
     var footer = document.querySelector('footer') || document.body;
